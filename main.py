@@ -20,6 +20,7 @@ TOKEN_FILE = "token.pickle"
 
 SCOPES = ["https://www.googleapis.com/auth/youtube"]
 
+# Günlük paylaşım saatleri (Türkiye saati)
 SCHEDULE_TIMES = [
     "13:00:00+03:00",
     "17:00:00+03:00"
@@ -118,9 +119,8 @@ def start_batch_planning():
         if f.lower().endswith(".mp4")
     ])
 
-    required_videos = len(SCHEDULE_TIMES) * 2
-    if len(videos) < required_videos:
-        print(f"❌ HATA: En az {required_videos} video olmalı.")
+    if len(videos) < len(SCHEDULE_TIMES) * 2:
+        print("❌ Yeterli video yok, işlem iptal edildi.")
         return
 
     target_dates = get_next_available_dates(2)
@@ -137,9 +137,14 @@ def start_batch_planning():
             try:
                 upload_and_schedule(youtube, full_path, publish_time)
 
+                # === DOSYA ADI ÇAKIŞMASINI ÖNLE ===
+                name, ext = os.path.splitext(video_file)
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                new_name = f"{name}_{timestamp}{ext}"
+
                 shutil.move(
                     full_path,
-                    os.path.join(DESTINATION_FOLDER, video_file)
+                    os.path.join(DESTINATION_FOLDER, new_name)
                 )
 
                 video_index += 1
@@ -147,14 +152,14 @@ def start_batch_planning():
             except Exception as e:
                 print(f"❌ {video_file} yüklenirken hata oluştu:")
                 print(e)
-                print("➡️ Diğer videolara devam ediliyor...\n")
+                print("➡️ Diğer videoya geçiliyor...\n")
                 continue
 
         with open(LOG_FILE, "a") as f:
             f.write(date_str + "\n")
 
     print("\n🚀 İŞLEM TAMAM")
-    print("Planlanabilen tüm videolar başarıyla işlendi.")
+    print("Yüklenebilen tüm videolar başarıyla planlandı.")
 
 # ======================
 # ENTRY POINT
